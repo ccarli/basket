@@ -70,9 +70,16 @@ in-cell editing, TSV copy/paste, range clearing, live totals, and server-side ch
   position; clearing a line removes it.
 - **Bulk edit** — select a range, type a value and press **Ctrl/Cmd+Enter** to
   apply it to every editable cell of the selection, as in Excel.
+- **Amount input** — quantities and notionals accept `125k`, `140M`, `1.5m` and
+  separated forms like `1,500,000`; everything is parsed by `parseQty()` in
+  `frontend/src/model.js` and rounded to the unit.
 - **Deal sheet** — computed as Current − Previous per ISIN (a missing side counts
   as zero) and valued at the Current prices, so it follows every edit.
 - **Dates** — changing TD moves COB to the previous business day and VD to the
   next one (weekends skipped, no holiday calendar).
+- **Notionals** — old notional is the previous basket's total MV (read-only), the
+  new notional defaults to it, and the unwind amount is the difference: editing
+  either one recomputes the other. They are indicators only — they do not rescale
+  the positions.
 - **Rows** — `MAIN_TABLE_ROWS` / `DEAL_TABLE_ROWS` in `backend/app.py` set how
   many lines each grid shows.

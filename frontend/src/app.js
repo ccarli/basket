@@ -32,6 +32,8 @@ export default function App() {
   const [expanded, setExpanded] = useState([]);
   /** User edits of the current set, keyed by displayed row index. */
   const [edits, setEdits] = useState({});
+  /** Target notional of the basket; null follows the previous notional. */
+  const [target, setTarget] = useState(null);
 
   const mainScroll = useRef(null);
   const dealScroll = useRef(null);
@@ -100,19 +102,28 @@ export default function App() {
 
   const switchMode = (m) => { setMode(m); reset(); };
 
-  const switchBasket = (b) => { setBasket(b); setEdits({}); reset(); };
+  const switchBasket = (b) => { setBasket(b); setEdits({}); setTarget(null); reset(); };
 
   const onResize = (col, w) => setWidths((prev) => prev.map((x, i) => (i === col ? w : x)));
 
   if (!data) return null;
 
   const shown = positions(rows);
+  const currentMv = Math.round(sum(positions(current), (r) => toEur(r, data.eurusd)));
+  const previousMv = Math.round(sum(data.previous, (r) => toEur(r, data.eurusd)));
   const mainTotals = [
     { k: "Lines", v: String(shown.length) },
     { k: "Total quantity", v: fmtInt(sum(shown, (r) => r.qty)) },
-    { k: "Total MV — current", ccy: "EUR eq.", v: fmtInt(Math.round(sum(positions(current), (r) => toEur(r, data.eurusd)))) },
-    { k: "Total MV — previous", ccy: "EUR eq.", v: fmtInt(Math.round(sum(data.previous, (r) => toEur(r, data.eurusd)))) },
+    { k: "Total MV — current", ccy: "EUR eq.", v: fmtInt(currentMv) },
+    { k: "Total MV — previous", ccy: "EUR eq.", v: fmtInt(previousMv) },
   ];
+
+  /** Old notional is the previous basket; the new one defaults to it, and the
+      unwind amount is the difference — editing either side moves the other. */
+  const notional = { old: previousMv, new: target ?? previousMv };
+  notional.unwind = notional.old - notional.new;
+  const onNotional = (field, value) =>
+    setTarget(field === "new" ? value : previousMv - value);
 
   const dealQty = sum(deal, (r) => r.qty);
   const dealMv = sum(deal, (r) => toEur(r, data.eurusd));
@@ -129,6 +140,8 @@ export default function App() {
         basket=${data.basket}
         onBasketChange=${switchBasket}
         statics=${data.statics}
+        notional=${notional}
+        onNotional=${onNotional}
         dark=${dark}
         onToggleTheme=${() => setDark((d) => !d)}
       />

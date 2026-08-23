@@ -14,10 +14,17 @@ const DESCRIPTIVE = ["name", "issuer", "country", "instr_type", "rating", "type"
 /** Which row field each editable column writes to. */
 export const EDITABLE_FIELDS = { 2: "isin", 3: "qty", 4: "label" };
 
-/** "1,500,000" or "−100 000" → number; anything unparsable counts as 0. */
+/**
+ * "1,500,000", "−100 000", "125k" or "140M" → number, rounded to the unit;
+ * anything unparsable counts as 0.
+ */
 export function parseQty(text) {
-  const n = Number(String(text).replace(/[\s,]/g, "").replace(/−/g, "-"));
-  return Number.isFinite(n) ? n : 0;
+  const cleaned = String(text).replace(/[\s,]/g, "").replace(/−/g, "-");
+  const scaled = cleaned.match(/^(-?(?:\d+\.?\d*|\.\d+))([km])$/i);
+  const n = scaled
+    ? Number(scaled[1]) * (scaled[2].toLowerCase() === "k" ? 1e3 : 1e6)
+    : Number(cleaned);
+  return Number.isFinite(n) ? Math.round(n) : 0;
 }
 
 /** MV pre HC = quantity × dirty price / 100; Market value = MV pre HC × HC. */

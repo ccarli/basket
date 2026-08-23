@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import { html } from "../html.js";
 import { Popover, PopoverAnchor, PopoverContent } from "./ui/popover.js";
 import { Calendar, fmtDate, parseDate, shiftBusinessDays } from "./Calendar.js";
+import { fmtAmount } from "../format.js";
+import { parseQty } from "../model.js";
 import { StaticsDialog } from "./StaticsDialog.js";
 
 const DATE_FIELDS = [
@@ -18,7 +20,7 @@ const fromTradeDate = (td) => [
   fmtDate(shiftBusinessDays(td, 1)),
 ];
 
-export function Toolbar({ baskets, basket, onBasketChange, statics, dark, onToggleTheme }) {
+export function Toolbar({ baskets, basket, onBasketChange, statics, notional, onNotional, dark, onToggleTheme }) {
   const [dates, setDates] = useState(DATE_FIELDS.map((f) => f.initial));
 
   return html`
@@ -42,6 +44,15 @@ export function Toolbar({ baskets, basket, onBasketChange, statics, dark, onTogg
       </div>
 
       <div className="spacer" />
+
+      <div className="date-grid amounts" role="group" aria-label="Notionals">
+        <div className="dh">Old notional</div>
+        <div className="dh">New notional</div>
+        <div className="dh">Unwind amount</div>
+        <${AmountCell} label="Old notional" value=${notional.old} readOnly />
+        <${AmountCell} label="New notional" value=${notional.new} onCommit=${(v) => onNotional("new", v)} />
+        <${AmountCell} label="Unwind amount" value=${notional.unwind} onCommit=${(v) => onNotional("unwind", v)} />
+      </div>
 
       <div className="date-grid" role="group" aria-label="Dates">
         ${DATE_FIELDS.map((f) => html`<div className="dh" key=${f.key}>${f.key}</div>`)}
@@ -70,6 +81,35 @@ export function Toolbar({ baskets, basket, onBasketChange, statics, dark, onTogg
             </svg>`}
       </button>
     </header>
+  `;
+}
+
+/** Amount field: the typed text is kept raw while editing, formatted once committed. */
+function AmountCell({ label, value, onCommit, readOnly }) {
+  const [draft, setDraft] = useState(null);
+
+  const commit = () => {
+    if (draft === null) return;
+    onCommit(parseQty(draft));
+    setDraft(null);
+  };
+
+  return html`
+    <div className="dc">
+      <input
+        type="text"
+        aria-label=${label}
+        readOnly=${!!readOnly}
+        value=${draft ?? fmtAmount(value)}
+        onChange=${(e) => setDraft(e.target.value)}
+        onFocus=${(e) => !readOnly && e.target.select()}
+        onBlur=${commit}
+        onKeyDown=${(e) => {
+          if (e.key === "Enter") e.target.blur();
+          else if (e.key === "Escape") { setDraft(null); e.target.blur(); }
+        }}
+      />
+    </div>
   `;
 }
 

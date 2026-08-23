@@ -176,6 +176,14 @@
   .date-grid .dc:has(input:focus){ background:var(--accent-soft) }
   .date-grid .dc:has(input:focus) input{ color:var(--accent) }
 
+  /* Notionals: the same 2x3 shell as the dates, sized for amounts.
+     Read-only cells (old notional) drop the editable affordances. */
+  .date-grid.amounts{ grid-template-columns: repeat(3, 124px) }
+  .date-grid.amounts .dh{ white-space:nowrap }
+  .date-grid.amounts input{ text-align:right; padding-right:10px; cursor:text }
+  .date-grid.amounts input[readonly]{ color:var(--ink-2); cursor:default }
+  .date-grid.amounts .dc:has(input[readonly]):hover{ background:transparent }
+
   /* ---------- Main area ---------- */
   .main{
     grid-area: main;
