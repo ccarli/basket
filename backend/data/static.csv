@@ -1,0 +1,56 @@
+basket,key,value
+FINECO,basket_id,FINECO
+FINECO,isin,XS2272906683
+FINECO,inception_date,14-Jun-19
+FINECO,maturity,30-Jun-29
+FINECO,custodian,Clearstream
+FINECO,calc_agent,Structured Products Desk
+FINECO,reshuffle_freq,Quarterly
+FINECO,min_denom,"100,000"
+FINECO,management_fee,0.87 %
+FINECO,strategy,Global IG diversified
+FINECO,listing,Luxembourg SE
+ALPINE II,basket_id,ALPINE II
+ALPINE II,isin,XS7044286097
+ALPINE II,inception_date,09-Jan-21
+ALPINE II,maturity,15-Dec-31
+ALPINE II,custodian,Euroclear
+ALPINE II,calc_agent,Structured Products Desk
+ALPINE II,reshuffle_freq,Quarterly
+ALPINE II,min_denom,"100,000"
+ALPINE II,management_fee,0.42 %
+ALPINE II,strategy,Euro financials senior
+ALPINE II,listing,Luxembourg SE
+MEDITERRA,basket_id,MEDITERRA
+MEDITERRA,isin,XS1008590103
+MEDITERRA,inception_date,18-Sep-24
+MEDITERRA,maturity,30-Jun-29
+MEDITERRA,custodian,Clearstream
+MEDITERRA,calc_agent,Structured Products Desk
+MEDITERRA,reshuffle_freq,Ad-hoc
+MEDITERRA,min_denom,"100,000"
+MEDITERRA,management_fee,1.05 %
+MEDITERRA,strategy,Global IG diversified
+MEDITERRA,listing,Luxembourg SE
+NORDIC 2029,basket_id,NORDIC 2029
+NORDIC 2029,isin,XS7066212499
+NORDIC 2029,inception_date,03-Mar-24
+NORDIC 2029,maturity,15-Dec-31
+NORDIC 2029,custodian,Euroclear
+NORDIC 2029,calc_agent,Structured Products Desk
+NORDIC 2029,reshuffle_freq,Quarterly
+NORDIC 2029,min_denom,"100,000"
+NORDIC 2029,management_fee,0.53 %
+NORDIC 2029,strategy,IG Euro corporate carry
+NORDIC 2029,listing,Euronext Paris
+SIENNA CORP,basket_id,SIENNA CORP
+SIENNA CORP,isin,XS2210135370
+SIENNA CORP,inception_date,01-Jun-19
+SIENNA CORP,maturity,Perpetual
+SIENNA CORP,custodian,Euroclear
+SIENNA CORP,calc_agent,Structured Products Desk
+SIENNA CORP,reshuffle_freq,Ad-hoc
+SIENNA CORP,min_denom,"100,000"
+SIENNA CORP,management_fee,0.93 %
+SIENNA CORP,strategy,Southern Europe corporates
+SIENNA CORP,listing,Luxembourg SE
