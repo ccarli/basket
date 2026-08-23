@@ -5,6 +5,7 @@ import { Calendar, fmtDate, parseDate, shiftBusinessDays } from "./Calendar.js";
 import { fmtAmount } from "../format.js";
 import { parseQty } from "../model.js";
 import { StaticsDialog } from "./StaticsDialog.js";
+import { Actions } from "./Actions.js";
 
 const DATE_FIELDS = [
   { key: "COB", label: "Close of business date", initial: "10-Aug" },
@@ -41,6 +42,7 @@ export function Toolbar({ baskets, basket, onBasketChange, statics, notional, on
           </div>
           <${StaticsDialog} statics=${statics} />
         </div>
+        <${Actions} basket=${basket} />
       </div>
 
       <div className="spacer" />
