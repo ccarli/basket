@@ -26,7 +26,6 @@
     --edit-tint-hover: rgba(33, 81, 229, 0.09);
 
     --top-h:         64px;
-    --btn-h:         56px;
 
     --f-ui:  "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --f-mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -43,11 +42,11 @@
   .app{
     display:grid;
     grid-template-columns: 1fr;
-    grid-template-rows: var(--top-h) 1fr var(--btn-h);
+    grid-template-rows: var(--top-h) 1fr auto;
     grid-template-areas:
       "top"
       "main"
-      "bar";
+      "drawer";
     height:100vh;
     min-height:640px;
   }
@@ -55,7 +54,7 @@
   /* ---------- Top toolbar ---------- */
   .top{
     grid-area: top;
-    display:flex; align-items:center; gap:24px;
+    display:flex; align-items:center; gap:12px;
     padding:0 20px;
     border-bottom:1px solid var(--line);
     background:var(--bg);
@@ -63,6 +62,7 @@
   .brand{
     display:flex; flex-direction:column; justify-content:center;
     line-height:1.15;
+    flex:0 0 auto; white-space:nowrap;
   }
   .brand .mark{
     font-weight:700; letter-spacing:-.015em; font-size:15px; color:var(--ink);
@@ -71,7 +71,7 @@
     font-size:11px; color:var(--ink-3); font-weight:400;
   }
 
-  .top-group{ display:flex; align-items:center; gap:14px }
+  .top-group{ display:flex; align-items:center; gap:12px; flex:0 0 auto }
   .top .spacer{ flex:1 }
 
   .field{ display:flex; flex-direction:column; gap:4px }
@@ -123,7 +123,8 @@
 
   /* Theme toggle button (borderless, subtle) */
   .theme-btn{
-    width:34px; height:34px; margin-left:12px; border-radius:8px;
+    flex:0 0 auto;
+    width:34px; height:34px; border-radius:8px;
     display:flex; align-items:center; justify-content:center;
     color:var(--ink-3);
   }
@@ -149,7 +150,7 @@
 
   /* ---------- Dates 2x3 grid ---------- */
   .date-grid{
-    display:grid;
+    display:grid; flex:0 0 auto;
     grid-template-columns: repeat(3, 74px);
     grid-template-rows: auto auto;
     border:1px solid var(--line-strong); border-radius:8px;
@@ -178,8 +179,8 @@
 
   /* Notionals: the same 2x3 shell as the dates, sized for amounts.
      Read-only cells (old notional) drop the editable affordances. */
-  .date-grid.amounts{ grid-template-columns: repeat(3, 124px) }
-  .date-grid.amounts .dh{ white-space:nowrap }
+  .date-grid.amounts{ grid-template-columns: repeat(3, 108px) }
+  .date-grid.amounts .dh{ white-space:nowrap; padding-left:4px; padding-right:4px }
   .date-grid.amounts input{ text-align:right; padding-right:10px; cursor:text }
   .date-grid.amounts input[readonly]{ color:var(--ink-2); cursor:default }
   .date-grid.amounts .dc:has(input[readonly]):hover{ background:transparent }
@@ -212,7 +213,7 @@
   /* ---------- Grid tables ---------- */
   .table-scroll{
     overflow:auto;
-    border-top:1px solid var(--line);
+    border-top:1px solid var(--line-strong);
   }
   .table-scroll.main-table{ height: 420px }
   .table-scroll.deal-table{ height: 260px }
@@ -377,50 +378,78 @@
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     gap:0;
-    border-top:1px solid var(--line-strong);
-    background:var(--surface);
+    background:var(--bg);
   }
+  /* Key and value share one line: the strip stays compact above the headers. */
   .totals-bar .cell{
-    padding:10px 16px;
-    display:flex; flex-direction:column; gap:2px;
+    padding:8px 16px;
+    display:flex; align-items:baseline; gap:10px;
     min-width:0;
   }
   .totals-bar .cell + .cell{ border-left:1px solid var(--line) }
   .totals-bar .k{
     font-size:10px; font-weight:600; letter-spacing:.08em;
     text-transform:uppercase; color:var(--ink-3);
+    white-space:nowrap;
   }
   .totals-bar .v{
     font-family:var(--f-mono); font-variant-numeric: tabular-nums;
-    font-weight:600; font-size:14px; color:var(--ink);
+    font-weight:600; font-size:13.5px; color:var(--ink);
     letter-spacing:-.005em;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   .totals-bar .v.pos{ color:var(--add) }
   .totals-bar .v.neg{ color:var(--rem) }
-  .totals-bar .v .ccy{
-    font-family:var(--f-ui); font-weight:500; font-size:11px;
-    color:var(--ink-3); margin-left:4px;
+  /* The currency hint keeps its own casing, so the label reads
+     "TOTAL MV — CURRENT EUR eq." instead of running the two together. */
+  .totals-bar .ccy{
+    font-family:var(--f-ui); font-weight:500; font-size:10px;
+    color:var(--ink-4); margin-left:6px; text-transform:none; letter-spacing:0;
   }
 
-  /* ---------- Bottom action bar ---------- */
-  .bar{
-    grid-area: bar;
-    border-top:1px solid var(--line);
+  /* ---------- Deal sheet drawer ---------- */
+  /* Its own row of the shell, so the tab never covers the totals bar. */
+  .drawer{
+    grid-area: drawer;
+    position:relative; min-width:0;
+    display:flex; flex-direction:column; align-items:center;
     background:var(--bg);
-    display:flex; align-items:center;
-    padding:0 20px;
-    gap:12px;
   }
-  .bar .status{
+  .drawer-handle{
+    position:relative; top:-1px; z-index:21;
     display:flex; align-items:center; gap:8px;
-    color:var(--ink-3); font-size:12px;
+    height:28px; padding:0 14px;
+    border:1px solid var(--line-strong); border-bottom:0;
+    border-radius:10px 10px 0 0;
+    background:var(--surface);
+    font-size:10.5px; font-weight:600; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-3);
   }
-  .bar .status .pip{ width:8px; height:8px; border-radius:50%; background:var(--add); box-shadow:0 0 0 3px var(--add-soft) }
-  .bar .spacer{ flex:1 }
-  .bar .actions{ display:flex; gap:8px }
+  .drawer-handle:hover{ background:var(--surface-2); color:var(--ink) }
+  .drawer-handle .chev{ transition:transform .2s ease }
+  .drawer.open .drawer-handle .chev{ transform:rotate(180deg) }
+
+  /* The panel slides up over the grid instead of resizing it. */
+  .drawer-body{
+    position:absolute; bottom:100%; left:0; right:0; z-index:20;
+    background:var(--bg);
+    border-top:1px solid var(--line-strong);
+    height:0; overflow:hidden;
+    transition:height .22s cubic-bezier(.4,0,.2,1);
+  }
+  .drawer.open .drawer-body{ height:316px; box-shadow:0 -14px 34px rgba(0,0,0,.10) }
+  .drawer-body .pane{ border-top:0 }
+  body.dark .drawer.open .drawer-body{ box-shadow:0 -14px 34px rgba(0,0,0,.5) }
+
+  /* With the deal sheet tucked away, the main grid takes the freed height. */
+  .main .pane{ flex:1 1 auto; min-height:0 }
+  .main .table-scroll.main-table{ height:auto; flex:1 1 auto }
+
+  /* ---------- Action buttons (toolbar) ---------- */
+  .actions{ display:flex; gap:8px; flex:0 0 auto }
   .btn{
     display:inline-flex; align-items:center; gap:8px;
-    height:38px; padding:0 16px;
+    height:34px; padding:0 12px;
     border-radius:8px; font-weight:500; font-size:13px;
     border:1px solid var(--line-strong);
     color:var(--ink);

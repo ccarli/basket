@@ -54,7 +54,7 @@ frontend/
   src/model.js         edits applied to the rows, and the deal sheet derived from them
   src/use-grid.js      Excel-like selection, keyboard nav, editing, copy/paste
   src/html.js          the htm/React binding used in place of JSX
-  src/components/      Toolbar, GridTable, InventoryPanel, TotalsBar, ActionBar,
+  src/components/      Toolbar, GridTable, InventoryPanel, TotalsBar, Actions,
                        StaticsDialog, Calendar, ui/ (shadcn-style primitives)
 ```
 
@@ -74,7 +74,9 @@ in-cell editing, TSV copy/paste, range clearing, live totals, and server-side ch
   separated forms like `1,500,000`; everything is parsed by `parseQty()` in
   `frontend/src/model.js` and rounded to the unit.
 - **Deal sheet** — computed as Current − Previous per ISIN (a missing side counts
-  as zero) and valued at the Current prices, so it follows every edit.
+  as zero) and valued at the Current prices, so it follows every edit. It lives in
+  a drawer, closed on load: the centred tab at the bottom slides it up over the
+  grid, which lets the main table use the full height the rest of the time.
 - **Dates** — changing TD moves COB to the previous business day and VD to the
   next one (weekends skipped, no holiday calendar).
 - **Notionals** — old notional is the previous basket's total MV (read-only), the

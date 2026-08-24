@@ -4,7 +4,6 @@ import { getBasket } from "./api.js";
 import { GridTable } from "./components/GridTable.js";
 import { Toolbar } from "./components/Toolbar.js";
 import { TotalsBar } from "./components/TotalsBar.js";
-import { ActionBar } from "./components/ActionBar.js";
 import { DEFAULT_WIDTHS, emptyCells, rowCells } from "./grid.js";
 import { fmtInt, signedInt } from "./format.js";
 import { useGrid } from "./use-grid.js";
@@ -34,6 +33,8 @@ export default function App() {
   const [edits, setEdits] = useState({});
   /** Target notional of the basket; null follows the previous notional. */
   const [target, setTarget] = useState(null);
+  /** The deal sheet lives in a drawer, closed on load. */
+  const [dealOpen, setDealOpen] = useState(false);
 
   const mainScroll = useRef(null);
   const dealScroll = useRef(null);
@@ -104,6 +105,11 @@ export default function App() {
 
   const switchBasket = (b) => { setBasket(b); setEdits({}); setTarget(null); reset(); };
 
+  const toggleDeal = () => {
+    if (dealOpen && grid.sel?.table === "deal") grid.setSel(null);
+    setDealOpen(!dealOpen);
+  };
+
   const onResize = (col, w) => setWidths((prev) => prev.map((x, i) => (i === col ? w : x)));
 
   if (!data) return null;
@@ -160,6 +166,7 @@ export default function App() {
             <div className="spacer" />
           </div>
 
+          <${TotalsBar} totals=${mainTotals} />
           <${GridTable}
             tableKey="main"
             cells=${mainCells}
@@ -175,32 +182,38 @@ export default function App() {
             expanded=${expanded}
             onToggleExpand=${(i) => setExpanded((e) => (e.includes(i) ? e.filter((x) => x !== i) : [...e, i]))}
           />
-          <${TotalsBar} totals=${mainTotals} />
         </section>
 
-        <section className="pane">
-          <div className="pane-head">
-            <div className="pane-title">Deal sheet</div>
-            <div className="spacer" />
-          </div>
-
-          <${GridTable}
-            tableKey="deal"
-            cells=${dealCells}
-            rows=${deal}
-            deltaHeaders=${true}
-            expandable=${false}
-            widths=${widths}
-            onResize=${onResize}
-            grid=${grid}
-            scrollRef=${dealScroll}
-            scrollClass="deal-table"
-          />
-          <${TotalsBar} totals=${dealTotals} />
-        </section>
       </main>
 
-      <${ActionBar} basket=${data.basket} />
+      <div className=${`drawer ${dealOpen ? "open" : ""}`}>
+        <button
+          className="drawer-handle"
+          aria-expanded=${dealOpen}
+          aria-controls="deal-drawer"
+          onClick=${toggleDeal}
+        >
+          <svg className="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6" /></svg>
+          Deal sheet
+        </button>
+        <div className="drawer-body" id="deal-drawer">
+          <section className="pane">
+            <${TotalsBar} totals=${dealTotals} />
+            <${GridTable}
+              tableKey="deal"
+              cells=${dealCells}
+              rows=${deal}
+              deltaHeaders=${true}
+              expandable=${false}
+              widths=${widths}
+              onResize=${onResize}
+              grid=${grid}
+              scrollRef=${dealScroll}
+              scrollClass="deal-table"
+            />
+          </section>
+        </div>
+      </div>
     </div>
   `;
 }
