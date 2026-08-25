@@ -1,12 +1,13 @@
 import { Fragment, useEffect, useRef } from "react";
 import { html } from "../html.js";
-import { COLUMNS, COL_MAX, COL_MIN, RESET_WIDTHS } from "../grid.js";
+import { COL_MIN, LEAD_COLS } from "../grid.js";
 import { InventoryPanel } from "./InventoryPanel.js";
 
 export function GridTable({
-  tableKey, cells, rows, deltaHeaders, expandable, widths, onResize,
+  tableKey, cells, rows, columns, deltaHeaders, expandable, widths, onResize,
   grid, scrollRef, scrollClass, inventory, expanded = [], onToggleExpand,
 }) {
+  const colMax = LEAD_COLS + columns.length - 1;
   return html`
     <div className=${`table-scroll ${scrollClass}`} ref=${scrollRef}>
       <table className="grid">
@@ -15,10 +16,12 @@ export function GridTable({
         </colgroup>
         <thead>
           <tr>
-            ${COLUMNS.map((col, i) => html`
-              <th key=${i} className=${col.num ? "num" : undefined}>
+            <th />
+            <th />
+            ${columns.map((col, i) => html`
+              <th key=${col.key} className=${col.num ? "num" : undefined}>
                 ${deltaHeaders && col.deltaLabel ? col.deltaLabel : col.label}
-                ${i >= 2 && html`<${Resizer} col=${i} onResize=${onResize} />`}
+                <${Resizer} col=${LEAD_COLS + i} onResize=${onResize} />
               </th>
             `)}
           </tr>
@@ -36,6 +39,7 @@ export function GridTable({
                       r=${r}
                       c=${c}
                       cell=${cell}
+                      colMax=${colMax}
                       grid=${grid}
                       expander=${c === 1 && expandable && row ? () => onToggleExpand?.(r) : undefined}
                     />
@@ -43,7 +47,7 @@ export function GridTable({
                 </tr>
                 ${row && expanded.includes(r) && html`
                   <tr className="inv">
-                    <td colSpan=${15}>
+                    <td colSpan=${LEAD_COLS + columns.length}>
                       <${InventoryPanel} isin=${row.isin} lines=${inventory?.[row.isin] ?? []} />
                     </td>
                   </tr>
@@ -58,13 +62,13 @@ export function GridTable({
 }
 
 /** A single <td>: handles selection classes, click/dbl-click and inline editing. */
-function Cell({ tableKey, r, c, cell, grid, expander }) {
+function Cell({ tableKey, r, c, cell, colMax, grid, expander }) {
   const { selectAt, selClass, editing, setEditing, startEdit, commitEdit, cancelEdit } = grid;
   const isEditing = editing?.table === tableKey && editing.r === r && editing.c === c;
   const editable = cell.cls.includes("editable");
 
   const onMouseDown = (e) => {
-    if (c < COL_MIN || c > COL_MAX) return;
+    if (c < COL_MIN || c > colMax) return;
     selectAt(tableKey, r, c, e.shiftKey);
   };
 
@@ -158,7 +162,7 @@ function Resizer({ col, onResize }) {
       ref=${ref}
       className="col-resizer"
       onMouseDown=${onMouseDown}
-      onDoubleClick=${(e) => { e.preventDefault(); e.stopPropagation(); onResize(col, RESET_WIDTHS[col] ?? 120); }}
+      onDoubleClick=${(e) => { e.preventDefault(); e.stopPropagation(); onResize(col, null); }}
     />
   `;
 }

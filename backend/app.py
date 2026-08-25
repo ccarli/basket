@@ -10,6 +10,24 @@ FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 
 EURUSD = 0.92
 
+# ---------------------------------------------------------------------------
+# Columns are described by the CSV header: adding a column to the data files is
+# all it takes for it to appear in the UI. Only the entries below need editing,
+# and only when a column needs a nicer label or a specific format.
+# ---------------------------------------------------------------------------
+HIDDEN_COLUMNS = {"state"}                       # rendering metadata, not shown
+EDITABLE_COLUMNS = {"isin", "qty", "label"}
+COLUMN_LABELS = {
+    "isin": "ISIN", "qty": "Quantity", "label": "Basket", "instr_type": "Instrument type",
+    "ccy": "Currency", "dirty_price": "Dirty Price", "hc": "HC",
+    "mv_pre": "MV pre HC", "mv": "Market value",
+}
+DELTA_LABELS = {"qty": "Δ Quantity", "mv_pre": "Δ MV pre HC", "mv": "Δ Market value"}
+# Columns whose cells add up in the "Selection" total, by label (case-insensitive).
+COLUMN_SELECTION = ["QUANTITY", "MV pre HC", "MARKET VALUE"]
+# text | mono | amount (integer) | price (2 decimals) | pct (0.95 -> 95%)
+COLUMN_FORMATS = {"isin": "mono", "qty": "amount", "mv_pre": "amount", "mv": "amount", "hc": "pct"}
+
 # How many rows each grid shows. MAIN_TABLE_ROWS is the number of lines available
 # for input in "Basket components": real positions first, empty rows after.
 MAIN_TABLE_ROWS = 150
@@ -46,6 +64,37 @@ def rows(basket: str, mode: str) -> pd.DataFrame:
     return load(f"data_{mode}_{slug(basket)}.csv")
 
 
+def column_format(name: str, dtype) -> str:
+    """Falls back to the dtype: whole numbers are amounts, decimals are prices."""
+    if name in COLUMN_FORMATS:
+        return COLUMN_FORMATS[name]
+    if pd.api.types.is_integer_dtype(dtype):
+        return "amount"
+    if pd.api.types.is_float_dtype(dtype):
+        return "price"
+    return "text"
+
+
+def columns(df: pd.DataFrame) -> list[dict]:
+    """The column definitions the UI renders, straight from the CSV header."""
+    out = []
+    for name, dtype in df.dtypes.items():
+        if name in HIDDEN_COLUMNS:
+            continue
+        fmt = column_format(name, dtype)
+        label = COLUMN_LABELS.get(name, name.replace("_", " ").capitalize())
+        out.append({
+            "key": name,
+            "label": label,
+            "summable": label.upper() in {c.upper() for c in COLUMN_SELECTION},
+            "deltaLabel": DELTA_LABELS.get(name),
+            "format": fmt,
+            "num": fmt in ("amount", "price", "pct"),
+            "editable": name in EDITABLE_COLUMNS,
+        })
+    return out
+
+
 @app.get("/api/basket")
 def basket(basket: str | None = None):
     """Everything the UI needs for one basket, in one payload."""
@@ -60,6 +109,7 @@ def basket(basket: str | None = None):
         "basket": basket,
         "eurusd": EURUSD,
         "rows": {"main": MAIN_TABLE_ROWS, "deal": DEAL_TABLE_ROWS},
+        "columns": columns(current),
         "statics": statics[statics["basket"] == basket].drop(columns="basket").to_dict(orient="records"),
         "current": current.to_dict(orient="records"),
         "previous": previous.to_dict(orient="records"),

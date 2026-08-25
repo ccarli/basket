@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { COL_MAX, COL_MIN } from "./grid.js";
+import { COL_MIN } from "./grid.js";
 
 /**
  * Excel-like grid behaviour shared by both tables: range selection, keyboard
@@ -11,11 +11,15 @@ import { COL_MAX, COL_MIN } from "./grid.js";
  *   { rowCount, isEditable(r, c), baseText(r, c), scroll() }
  * `scroll` is a getter because the ref is not attached when it is built.
  */
-export function useGrid({ tables, onEdit }) {
+export function useGrid({ tables, onEdit, colMax }) {
   const info = useRef(tables);
   info.current = tables;
   const emit = useRef(onEdit);
   emit.current = onEdit;
+  // Read through refs: both change with the data, and the callbacks below
+  // must not capture a stale value.
+  const lastCol = useRef(colMax);
+  lastCol.current = colMax;
 
   const [sel, setSel] = useState(null);
   const [editing, setEditing] = useState(null);
@@ -38,7 +42,7 @@ export function useGrid({ tables, onEdit }) {
   const selectAt = useCallback(
     (table, r, c, extend = false) => {
       const max = info.current[table].rowCount - 1;
-      const pos = { r: Math.max(0, Math.min(max, r)), c: Math.max(COL_MIN, Math.min(COL_MAX, c)) };
+      const pos = { r: Math.max(0, Math.min(max, r)), c: Math.max(COL_MIN, Math.min(lastCol.current, c)) };
       setSel((s) =>
         extend && s && s.table === table ? { ...s, focus: pos } : { table, anchor: pos, focus: pos }
       );
@@ -132,7 +136,7 @@ export function useGrid({ tables, onEdit }) {
       if (r >= t.rowCount) return;
       line.forEach((v, dc) => {
         const c = startC + dc;
-        if (c > COL_MAX || !t.isEditable(r, c)) return;
+        if (c > lastCol.current || !t.isEditable(r, c)) return;
         entries.push({ table: sel.table, r, c, value: v });
         lastR = Math.max(lastR, r);
         lastC = Math.max(lastC, c);
@@ -179,7 +183,7 @@ export function useGrid({ tables, onEdit }) {
       }
       if (e.key === "End") {
         e.preventDefault();
-        return selectAt(table, focus.r, COL_MAX, e.shiftKey);
+        return selectAt(table, focus.r, lastCol.current, e.shiftKey);
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
         e.preventDefault();

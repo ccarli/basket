@@ -376,7 +376,9 @@
   .totals-bar{
     display:grid;
     grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
+    /* Each tile gets at least its content, then they share what is left, so a
+       long total is never truncated when the Selection tile appears. */
+    grid-auto-columns: minmax(max-content, 1fr);
     gap:0;
     background:var(--bg);
   }
@@ -398,6 +400,7 @@
     letter-spacing:-.005em;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
+  .totals-bar .v.sel{ color:var(--accent) }
   .totals-bar .v.pos{ color:var(--add) }
   .totals-bar .v.neg{ color:var(--rem) }
   /* The currency hint keeps its own casing, so the label reads

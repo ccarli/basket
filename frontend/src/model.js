@@ -3,16 +3,14 @@
  * deal sheet derived from the Current/Previous comparison.
  */
 
-const BLANK = {
-  state: "add", isin: "", qty: 0, label: "SUB IN", name: "", issuer: "", country: "",
-  instr_type: "", rating: "", type: "", ccy: "EUR", dirty_price: NaN, hc: NaN, mv_pre: 0, mv: 0,
-};
-
-/** Fields copied over when a typed ISIN is already known from the previous set. */
-const DESCRIPTIVE = ["name", "issuer", "country", "instr_type", "rating", "type", "ccy", "dirty_price", "hc"];
-
-/** Which row field each editable column writes to. */
-export const EDITABLE_FIELDS = { 2: "isin", 3: "qty", 4: "label" };
+/** An empty position, typed from the column definitions. */
+const blankRow = (columns) => ({
+  state: "add",
+  ...Object.fromEntries(
+    columns.map((c) => [c.key, c.format === "amount" ? 0 : c.num ? NaN : ""])
+  ),
+  label: "SUB IN",
+});
 
 /**
  * "1,500,000", "−100 000", "125k" or "140M" → number, rounded to the unit;
@@ -41,7 +39,8 @@ export const positions = (rows) => rows.filter((r) => r && r.isin);
  * index, so typing into an empty line creates a position on that line; its
  * descriptive fields are taken from the previous set when the ISIN is known.
  */
-export function applyEdits(base, edits, previous) {
+export function applyEdits(base, edits, previous, columns) {
+  const format = new Map(columns.map((c) => [c.key, c.format]));
   const known = new Map(previous.map((r) => [r.isin, r]));
   const rows = base.slice();
 
@@ -49,15 +48,19 @@ export function applyEdits(base, edits, previous) {
     const i = Number(index);
     const current = rows[i];
     const isin = patch.isin ?? current?.isin ?? "";
+    // A new line whose ISIN is already held picks up its descriptive columns.
     const source = current ? null : known.get(isin);
+    const inherited = source
+      ? Object.fromEntries(columns.filter((c) => !c.editable).map((c) => [c.key, source[c.key]]))
+      : {};
+    const typed = Object.fromEntries(
+      Object.entries(patch).map(([key, value]) => [
+        key,
+        format.get(key) === "amount" ? parseQty(value) : value,
+      ])
+    );
 
-    rows[i] = derive({
-      ...(current ?? BLANK),
-      ...(source ? Object.fromEntries(DESCRIPTIVE.map((k) => [k, source[k]])) : {}),
-      ...(patch.isin !== undefined ? { isin: patch.isin } : {}),
-      ...(patch.label !== undefined ? { label: patch.label } : {}),
-      ...(patch.qty !== undefined ? { qty: parseQty(patch.qty) } : {}),
-    });
+    rows[i] = derive({ ...(current ?? blankRow(columns)), ...inherited, ...typed });
   }
   return rows;
 }
