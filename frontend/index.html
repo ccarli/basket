@@ -1,35 +1,169 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=1280" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280">
 <title>Basket TRS — Reshuffle</title>
-<!-- Inline favicon: no extra file, no request, no 404. -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232151E5'/><g fill='%23fff'><rect x='7' y='9' width='18' height='3' rx='1.5'/><rect x='7' y='15' width='18' height='3' rx='1.5'/><rect x='7' y='21' width='11' height='3' rx='1.5'/></g></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./style.css">
-
-<!-- Every dependency is loaded from the esm.sh CDN: no install, no build step.
-     `?external=react,react-dom` makes each package resolve React through this
-     same map, so only one React instance is ever loaded. -->
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.3.1",
-    "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
-    "react-dom": "https://esm.sh/react-dom@18.3.1?external=react",
-    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?external=react",
-    "htm/react": "https://esm.sh/htm@3.1.1/react?external=react",
-    "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.1.4?external=react,react-dom",
-    "@radix-ui/react-popover": "https://esm.sh/@radix-ui/react-popover@1.1.4?external=react,react-dom"
-  }
-}
-</script>
+<script type="module" src="./js/main.js"></script>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="module" src="./src/main.js"></script>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">Basket TRS</div>
+      <div class="crumb">secondary event</div>
+    </div>
+
+    <div class="top-group">
+      <div class="basket-group">
+        <div class="basket-select" title="Change basket">
+          <span class="name" id="basket-name"></span>
+          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          <select id="basket" aria-label="Basket"></select>
+        </div>
+        <button class="icon-btn" id="statics-open" title="View basket details">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        </button>
+      </div>
+      <div class="actions">
+        <button class="btn" id="cash-flows">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></svg>
+          Cash Flows
+        </button>
+        <button class="btn" id="checks">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+          Checks
+        </button>
+        <button class="btn" id="email">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+          Email
+        </button>
+        <button class="btn primary" id="book">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+          Book
+        </button>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="date-grid amounts" role="group" aria-label="Notionals">
+      <div class="dh">Old notional</div>
+      <div class="dh">New notional</div>
+      <div class="dh">Unwind amount</div>
+      <div class="dc"><input data-notional="old" aria-label="Old notional" readonly></div>
+      <div class="dc"><input data-notional="new" aria-label="New notional"></div>
+      <div class="dc"><input data-notional="unwind" aria-label="Unwind amount"></div>
+    </div>
+
+    <div class="date-grid" role="group" aria-label="Dates">
+      <div class="dh">COB</div>
+      <div class="dh">TD</div>
+      <div class="dh">VD</div>
+      <div class="dc"><input data-date="COB" aria-label="Close of business date" readonly></div>
+      <div class="dc"><input data-date="TD" aria-label="Trade date" readonly></div>
+      <div class="dc"><input data-date="VD" aria-label="Value date" readonly></div>
+    </div>
+
+    <button class="theme-btn" id="theme" title="Toggle theme" aria-label="Toggle dark mode">
+      <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </header>
+
+  <main class="main">
+    <section class="pane">
+      <div class="pane-head">
+        <div class="pane-title">Basket components</div>
+        <div class="seg" role="tablist" aria-label="Basket mode">
+          <button data-mode="current" class="on"><span class="pip"></span>Current</button>
+          <button data-mode="previous"><span class="pip"></span>Previous</button>
+        </div>
+      </div>
+      <div class="totals-bar" id="main-totals"></div>
+      <div class="table-scroll main-table" id="main-grid"></div>
+    </section>
+  </main>
+
+  <div class="drawer" id="drawer">
+    <button class="drawer-handle" id="drawer-handle" aria-expanded="false" aria-controls="deal-drawer">
+      <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+      Deal sheet
+    </button>
+    <div class="drawer-body" id="deal-drawer">
+      <section class="pane">
+        <div class="totals-bar" id="deal-totals"></div>
+        <div class="table-scroll deal-table" id="deal-grid"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<dialog class="pop" id="statics">
+  <div class="pop-head">
+    <div class="t" id="statics-title"></div>
+    <div class="s">basket details</div>
+    <button class="x" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="pop-body" id="statics-body"></div>
+</dialog>
+
+<dialog class="pop" id="cash-flows-dialog">
+  <div class="pop-head">
+    <div class="t">Cash Flows</div>
+    <div class="s"></div>
+    <button class="x" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="pop-body"></div>
+</dialog>
+
+<dialog class="pop tasks-dialog" id="checks-dialog">
+  <div class="pop-head">
+    <div class="t">Checks</div>
+    <div class="s"></div>
+    <button class="x" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <ul class="pop-body tasks"></ul>
+</dialog>
+
+<dialog class="pop tasks-dialog" id="booking-dialog">
+  <div class="pop-head">
+    <div class="t">Booking</div>
+    <div class="s"></div>
+    <button class="x" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <ul class="pop-body tasks"></ul>
+</dialog>
+
+<dialog class="pop" id="email-dialog">
+  <div class="pop-head">
+    <div class="t">Email</div>
+    <div class="s">confirmation</div>
+  </div>
+  <p class="pop-message">Send the <b id="email-basket"></b> reshuffle by email?</p>
+  <ul class="tasks">
+    <li id="email-task"><span class="status"></span><div><div class="title"></div><div class="detail"></div></div></li>
+  </ul>
+  <div class="pop-foot">
+    <button class="btn x cancel">Cancel</button>
+    <button class="btn x close">Close</button>
+    <button class="btn primary" id="email-send">Send</button>
+  </div>
+</dialog>
+
+<div class="cal-pop" id="calendar"></div>
 </body>
 </html>

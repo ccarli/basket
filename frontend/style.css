@@ -1,4 +1,3 @@
-/* Design tokens & component styles ported verbatim from examples/app_google_design.html */
 :root{
     --bg:            #FFFFFF;
     --surface:       #FAFAF9;
@@ -54,8 +53,8 @@
   /* ---------- Top toolbar ---------- */
   .top{
     grid-area: top;
-    display:flex; align-items:center; gap:12px;
-    padding:0 20px;
+    display:flex; align-items:center; gap:10px;
+    padding:0 16px;
     border-bottom:1px solid var(--line);
     background:var(--bg);
   }
@@ -71,7 +70,7 @@
     font-size:11px; color:var(--ink-3); font-weight:400;
   }
 
-  .top-group{ display:flex; align-items:center; gap:12px; flex:0 0 auto }
+  .top-group{ display:flex; align-items:center; gap:10px; flex:0 0 auto }
   .top .spacer{ flex:1 }
 
   .field{ display:flex; flex-direction:column; gap:4px }
@@ -104,7 +103,7 @@
     height:34px; padding:0 10px 0 12px;
     border:1px solid var(--line-strong); border-radius:8px;
     background:var(--bg);
-    min-width:180px;
+    min-width:144px;
     cursor:pointer;
   }
   .basket-select:hover{ border-color:var(--ink-3) }
@@ -151,7 +150,7 @@
   /* ---------- Dates 2x3 grid ---------- */
   .date-grid{
     display:grid; flex:0 0 auto;
-    grid-template-columns: repeat(3, 74px);
+    grid-template-columns: repeat(3, 60px);
     grid-template-rows: auto auto;
     border:1px solid var(--line-strong); border-radius:8px;
     overflow:hidden;
@@ -229,7 +228,7 @@
     border-bottom:1px solid var(--line-strong);
     text-align:left;
     font-weight:600; color:var(--ink-3);
-    font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+    font-size:10.5px; letter-spacing:.08em;
     padding:9px 10px;
     white-space:nowrap;
     overflow:hidden; text-overflow:ellipsis;
@@ -314,9 +313,8 @@
   tr.expanded .exp-btn svg{ transform:rotate(45deg) }
 
   /* signed number */
-  .signed.pos{ color:var(--add) }
-  .signed.neg{ color:var(--rem) }
-  .signed .sign{ opacity:.85; padding-right:2px }
+  table.grid .cell.pos{ color:var(--add) }
+  table.grid .cell.neg{ color:var(--rem) }
 
   /* Column resizer */
   th{ position:relative }
@@ -354,7 +352,6 @@
     display:flex; align-items:center; gap:10px; margin-bottom:8px;
   }
   .inv-head .t{ font-size:10.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3) }
-  .inv-head .isin{ font-family:var(--f-mono); font-size:11.5px; color:var(--ink-2); background:var(--bg); padding:2px 6px; border-radius:4px; border:1px solid var(--line) }
   .inv-head .count{ margin-left:auto; font-size:11px; color:var(--ink-3) }
   table.inv{
     width:100%; border-collapse:separate; border-spacing:0;
@@ -363,14 +360,14 @@
   }
   table.inv th{
     text-align:left; padding:8px 10px; font-size:10.5px; font-weight:600;
-    letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3);
+    letter-spacing:.08em; color:var(--ink-3);
     border-bottom:1px solid var(--line); background:var(--surface);
   }
   table.inv th.num{ text-align:right }
   table.inv td{ padding:8px 10px; border-bottom:1px solid var(--line); color:var(--ink-2) }
   table.inv tr:last-child td{ border-bottom:0 }
   table.inv td.num{ text-align:right; font-family:var(--f-mono); font-variant-numeric: tabular-nums }
-  table.inv td.mono{ font-family:var(--f-mono) }
+  table.inv td:first-child{ font-family:var(--f-mono) }
 
   /* ---------- Totals bar ---------- */
   .totals-bar{
@@ -391,7 +388,7 @@
   .totals-bar .cell + .cell{ border-left:1px solid var(--line) }
   .totals-bar .k{
     font-size:10px; font-weight:600; letter-spacing:.08em;
-    text-transform:uppercase; color:var(--ink-3);
+    color:var(--ink-3);
     white-space:nowrap;
   }
   .totals-bar .v{
@@ -451,8 +448,8 @@
   /* ---------- Action buttons (toolbar) ---------- */
   .actions{ display:flex; gap:8px; flex:0 0 auto }
   .btn{
-    display:inline-flex; align-items:center; gap:8px;
-    height:34px; padding:0 12px;
+    display:inline-flex; align-items:center; gap:6px;
+    height:34px; padding:0 10px;
     border-radius:8px; font-weight:500; font-size:13px;
     border:1px solid var(--line-strong);
     color:var(--ink);
@@ -465,18 +462,15 @@
   .btn.primary:hover{ background:#1B45C4 }
 
   /* ---------- Statics popup ---------- */
-  .pop-mask{
-    position:fixed; inset:0; background:rgba(10,10,10,.28);
-    display:none; align-items:flex-start; justify-content:center;
-    padding-top:88px; z-index:50;
-  }
-  .pop-mask.open{ display:flex }
-  .pop{
-    background:var(--bg); border:1px solid var(--line); border-radius:12px;
+  dialog.pop{
+    background:var(--bg); color:var(--ink); border:1px solid var(--line); border-radius:12px;
     box-shadow: 0 20px 60px rgba(0,0,0,.15), 0 4px 12px rgba(0,0,0,.08);
     width:420px; max-height:70vh; overflow:hidden;
-    display:flex; flex-direction:column;
+    padding:0; margin:88px auto auto;
+    flex-direction:column;
   }
+  dialog.pop[open]{ display:flex }
+  dialog.pop::backdrop{ background:rgba(10,10,10,.28) }
   .pop-head{
     display:flex; align-items:center; padding:14px 16px;
     border-bottom:1px solid var(--line);
@@ -489,14 +483,52 @@
   .pop table{ width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px }
   .pop table th{
     text-align:left; padding:8px 16px; font-size:10.5px; letter-spacing:.08em;
-    text-transform:uppercase; color:var(--ink-3); font-weight:600;
+    color:var(--ink-3); font-weight:600;
     background:var(--surface); border-bottom:1px solid var(--line);
     position:sticky; top:0;
   }
   .pop table td{ padding:8px 16px; border-bottom:1px solid var(--line); color:var(--ink-2) }
-  .pop table td.k{ color:var(--ink-3); font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:500; width:45% }
-  .pop table td.v{ font-family:var(--f-mono); color:var(--ink); font-variant-numeric: tabular-nums }
+  .pop table td:first-child{ color:var(--ink-3); font-size:11px; letter-spacing:.06em; font-weight:500; width:45% }
+  .pop table td:last-child{ font-family:var(--f-mono); color:var(--ink); font-variant-numeric: tabular-nums }
   .pop table tr:last-child td{ border-bottom:0 }
+  .pop table .num{ text-align:right }
+  .pop table + table{ border-top:1px solid var(--line-strong) }
+  #cash-flows-dialog table:first-child tr:last-child td{ font-weight:600; color:var(--ink); border-top:1px solid var(--line-strong) }
+
+  .pop-message{ margin:0; padding:18px 16px; color:var(--ink-2) }
+  .pop-foot{ display:flex; justify-content:flex-end; gap:8px; padding:12px 16px; border-top:1px solid var(--line) }
+
+  /* ---------- Task lists (checks, booking, email): the class of an item is its status ---------- */
+  dialog.tasks-dialog{ width:520px }
+  .tasks{ list-style:none; margin:0; padding:0 }
+  .tasks li{ display:flex; gap:12px; padding:10px 16px; border-bottom:1px solid var(--line) }
+  .tasks li:last-child{ border-bottom:0 }
+  .tasks .title{ font-size:12.5px; color:var(--ink) }
+  .tasks .function{ font-family:var(--f-mono) }
+  .tasks .description{ font-size:11.5px; color:var(--ink-3); margin-top:2px }
+  .tasks .detail{ font-size:12px; color:var(--ink-3); margin-top:4px }
+  .tasks .failed .detail{ color:var(--rem) }
+  .tasks .detail:empty{ display:none }
+  .tasks .pending .title{ color:var(--ink-4) }
+  .tasks .status{
+    flex:0 0 18px; height:18px; margin-top:1px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; color:#fff;
+  }
+  .tasks .pending .status{ box-shadow:inset 0 0 0 2px var(--line-strong) }
+  .tasks .running .status{
+    border:2px solid var(--accent-soft); border-top-color:var(--accent);
+    animation:spin .7s linear infinite;
+  }
+  .tasks .passed .status{ background:var(--add) }
+  .tasks .passed .status::before{ content:"✓" }
+  .tasks .failed .status{ background:var(--rem) }
+  .tasks .failed .status::before{ content:"✕" }
+  @keyframes spin{ to{ transform:rotate(360deg) } }
+
+  /* ---------- Email popup: data-state is asking, sending or done ---------- */
+  #email-dialog[data-state="asking"] :is(.tasks, .close),
+  #email-dialog:not([data-state="asking"]) :is(.pop-message, .cancel, #email-send){ display:none }
 
   /* ---------- Calendar popover ---------- */
   .cal-pop{
@@ -569,7 +601,7 @@
 
   /* Dark-mode fixups for hard-coded colour values */
   body.dark .btn.primary:hover{ background:#5A7BDE }
-  body.dark .pop-mask{ background:rgba(0,0,0,0.55) }
+  body.dark dialog.pop::backdrop{ background:rgba(0,0,0,0.55) }
   body.dark .pop{ box-shadow:0 20px 60px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.3) }
   body.dark .cal-pop{ box-shadow:0 12px 32px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.3) }
   body.dark .cal-day.sel:hover{ background:#5A7BDE }
