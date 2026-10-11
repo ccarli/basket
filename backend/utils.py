@@ -5,19 +5,40 @@ import pandas as pd
 
 DATA_DIR = Path(__file__).parent / "data"
 
-EURUSD = 0.92
 MAIN_TABLE_ROWS = 150
 DEAL_TABLE_ROWS = 10
 
 EMAIL_RECIPIENT = "desk@example.com"
 MOCK_EMAIL_DURATION = 1.5  # seconds the mock pretends to send for
 
-# Columns are named exactly as in the header of data/data_<mode>_<basket>.csv.
-HIDDEN_COLUMNS = {"state"}
-EDITABLE_COLUMNS = {"isin", "qty", "label"}
-SUMMABLE_COLUMNS = {"qty", "mv_pre", "mv"}
-# text | mono | amount | price | pct. Unlisted columns follow their dtype.
-COLUMN_FORMATS = {"isin": "mono", "qty": "amount", "mv_pre": "amount", "mv": "amount", "hc": "pct"}
+# The basket columns the backend computes with, named exactly as in the header of
+# data/data_<mode>_<basket>.csv. frontend/js/model.js holds the same list.
+ISIN = "ISIN"
+NOMINAL = "NOMINAL"
+SOURCE = "SOURCE"
+ISSUER = "ISSUER"
+CURRENCY = "CURRENCY"
+RISK_COUNTRY = "RISK COUNTRY"
+MIN_HC = "MIN HC"
+HC = "HC"
+RESET_FX = "RESET FX"  # units of CURRENCY per EUR
+DIRTY_PX = "DIRTY PX"
+MARKET_VALUE_PRE_HC = "MARKET VALUE (EUR PRE-HC)"
+MARKET_VALUE = "MARKET VALUE (EUR)"
+
+HIDDEN_COLUMNS = set()
+EDITABLE_COLUMNS = {ISIN, NOMINAL, SOURCE}
+SUMMABLE_COLUMNS = {NOMINAL, MARKET_VALUE_PRE_HC, MARKET_VALUE}
+# text | mono | amount | price | rate | pct. Unlisted columns follow their dtype.
+COLUMN_FORMATS = {
+    ISIN: "mono",
+    NOMINAL: "amount",
+    MIN_HC: "pct",
+    HC: "pct",
+    RESET_FX: "rate",
+    MARKET_VALUE_PRE_HC: "amount",
+    MARKET_VALUE: "amount",
+}
 
 
 class UnknownFunction(LookupError):
@@ -55,6 +76,11 @@ def baskets() -> list[str]:
 
 def positions(basket: str, mode: str) -> pd.DataFrame:
     return load(f"data_{mode}_{basket.lower().replace(' ', '_')}")
+
+
+# The current positions as edited on screen, shaped like the CSV they started from.
+def edited_positions(basket: str, records: list[dict]) -> pd.DataFrame:
+    return pd.DataFrame(records, columns=positions(basket, "current").columns)
 
 
 def column_format(name: str, dtype) -> str:
@@ -98,17 +124,15 @@ def basket_payload(basket: str) -> dict:
     return {
         "baskets": baskets(),
         "basket": basket,
-        "eurusd": EURUSD,
         "rows": {"main": MAIN_TABLE_ROWS, "deal": DEAL_TABLE_ROWS},
         "columns": columns(current),
         "statics": statics(basket),
         "current": records(current),
         "previous": records(previous),
-        "inventory": inventory(set(current["isin"]) | set(previous["isin"])),
+        "inventory": inventory(set(current[ISIN]) | set(previous[ISIN])),
     }
 
 
-def send_email(basket: str) -> dict:
+def send_email(basket: str, positions: pd.DataFrame) -> dict:
     time.sleep(MOCK_EMAIL_DURATION)
-    lines = len(positions(basket, "current"))
-    return {"detail": f"{basket} reshuffle, {lines} lines, to {EMAIL_RECIPIENT} (mock: nothing left the app)"}
+    return {"detail": f"{basket} reshuffle, {len(positions)} lines, to {EMAIL_RECIPIENT} (mock: nothing left the app)"}

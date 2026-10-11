@@ -31,16 +31,17 @@ frontend/
   style.css       design tokens and component styles
   js/main.js      state, rendering, totals, wiring
   js/model.js     edits, market values, deal sheet, selection sum
-  js/grid.js      the Excel-like table: selection, keyboard, editing, clipboard, resizing
+  js/grid.js      the Excel-like table: selection, keyboard, editing, clipboard, resizing, filtering
   js/widths.js    automatic column widths
+  js/filter.js    what a column filter matches
   js/format.js    number formatting and parsing
   js/html.js      HTML escaping and the generic records table
   js/toolbar.js   basket selector, basket details, notionals, theme
   js/tasks.js     the Checks and Booking popups
-  js/cash_flows.js  the Cash Flows popup
+  js/cash_flows.js the Cash Flows popup
   js/email.js     the Email confirmation popup
   js/calendar.js  the COB / TD / VD date picker
-  js/api.js       the two backend calls
+  js/api.js       the backend calls
 ```
 
 ## Data
@@ -49,7 +50,7 @@ frontend/
 |----------------------------|-----------------------------------------------------------------|
 | `data_<mode>_<basket>.csv` | the grid. One file per basket and per mode (`current`, `previous`) |
 | `static.csv`               | the basket selector and the "basket details" popup              |
-| `inventory.csv`            | the sub-table opened by the `+` of a row, filtered on its `isin` |
+| `inventory.csv`            | the sub-table opened by the `+` of a row, filtered on its `ISIN` |
 
 A basket name maps to its file names in lower case with underscores:
 `NORDIC 2029` reads `data_current_nordic_2029.csv` and `data_previous_nordic_2029.csv`.
@@ -71,21 +72,51 @@ per-column settings are four constants at the top of `backend/utils.py`:
 | `HIDDEN_COLUMNS`   | loaded but not displayed                             |
 | `EDITABLE_COLUMNS` | can be typed into in the current set                 |
 | `SUMMABLE_COLUMNS` | add up in the "Selection" total                      |
-| `COLUMN_FORMATS`   | `text`, `mono`, `amount`, `price` or `pct`, when the dtype is not enough |
+| `COLUMN_FORMATS`   | `text`, `mono`, `amount`, `price`, `rate` or `pct`, when the dtype is not enough |
 
-The code reads a few columns by name: `isin`, `qty`, `label`, `state`, `ccy`,
-`dirty_price`, `hc`, `mv_pre`, `mv` in `frontend/js/model.js`, `isin` and `basket`
-in `backend/utils.py`, and `isin`, `qty`, `mv`, `issuer`, `country`,
-`available_qty`, `settlement` in `backend/checks.py`, `qty`, `mv` in
-`backend/booking.py`, and `isin`, `qty`, `ccy`, `dirty_price`, `mv` in
-`backend/cash_flows.py`. Renaming one of them means renaming it in the CSVs and in
-those files. Every other column
-can be renamed in the CSVs alone.
+The columns the code computes with are listed once per tier, as constants named
+after the header: the block at the top of `backend/utils.py`, which `checks.py`,
+`booking.py` and `cash_flows.py` import, and the block at the top of
+`frontend/js/model.js`. Renaming one of them means renaming it in the CSVs and
+in those two blocks. Every other column can be renamed in the CSVs alone.
+
+The basket files hold these columns, in this order:
+
+| Column | Notes |
+|---|---|
+| `ISIN`, `NOMINAL`, `SOURCE` | editable. `SOURCE` is `TRS`, `SUB IN` or `SUB OUT`; anything else typed is ignored |
+| `BBG NAME`, `MATURITY`, `ISSUER`, `TYPE`, `CURRENCY` | |
+| `ISSUER COUNTRY`, `RISK COUNTRY`, `GRADE`, `RATING`, `NEXT COUPON` | |
+| `MIN HC`, `HC` | haircuts as ratios: `0.05` displays as `5%` |
+| `RESET FX` | units of `CURRENCY` per EUR: `1` for EUR, `1.0870` for USD |
+| `CLEAN PX`, `DIRTY PX` | |
+| `MARKET VALUE (EUR PRE-HC)` | `NOMINAL × DIRTY PX / 100 / RESET FX` |
+| `MARKET VALUE (EUR)` | `MARKET VALUE (EUR PRE-HC) × (1 − HC)` |
+
+`inventory.csv` and `static.csv` keep their own lower-case headers.
 
 A blank CSV cell is served as `null`: it displays empty in a text column, as
-`—` in a price or percentage column and as `0` in an amount column. pandas reads
+`—` in a price, rate or percentage column and as `0` in an amount column. pandas reads
 a whole-number column holding a blank as decimals, so list such a column as
 `amount` in `COLUMN_FORMATS`.
+
+## The edited basket
+
+The CSVs only load the page. Everything the buttons run in the backend (cash
+flows, checks, booking, email) works on the basket as it stands on screen, edits
+included. Each of those calls is a `POST` whose JSON body is built by
+`editedBasket()` in `frontend/js/main.js`:
+
+```json
+{ "basket": "FINECO", "positions": [{ "ISIN": "FR0123456", "NOMINAL": 100000000, "…": "…" }], "unwind": 0 }
+```
+
+`positions` holds the current lines that carry an `ISIN`, with the same keys as
+the CSV header. `app.py` turns them into a DataFrame shaped like the CSV
+(`EditedBasket.frame`) and passes it on, so a backend function receives the same
+kind of DataFrame whether the user edited anything or not. No backend function
+reads the current positions from the CSV itself. The previous positions and the
+inventory are not editable and still come from the CSVs.
 
 ## Checks and booking
 
@@ -96,8 +127,8 @@ each shows a spinner while it runs, then passed or failed with a message.
 | Endpoint                                  | Returns                                   |
 |-------------------------------------------|-------------------------------------------|
 | `GET /api/checks`, `GET /api/booking`     | `[{name, description}]`, in running order |
-| `POST /api/checks/<name>?basket=…`        | `{passed, detail}`                        |
-| `POST /api/booking/<name>?basket=…`       | `{passed, detail}`                        |
+| `POST /api/checks/<name>`                 | `{passed, detail}`                        |
+| `POST /api/booking/<name>`                | `{passed, detail}`                        |
 
 The function name is what the popup displays, and the functions run in the
 order they are written. Adding one needs no frontend change.
@@ -110,37 +141,35 @@ order they are written. Adding one needs no frontend change.
   `BookingError("reason")` when it fails. Booking stops at the first failure.
   The steps are `log_basket`, `book_star`, `book_focus` and `book_apex`.
 
-Both are mocks. They read the current CSV rather than the edits made on screen
-and sleep for `MOCK_DURATION` so the spinner is visible. The booking steps book
+Both are mocks. They sleep for `MOCK_DURATION` so the spinner is visible. The booking steps book
 nothing and return made-up references; `book_apex` rejects baskets above
 `APEX_MAX_LINES`. `minimum_outstanding_amount` uses the inventory as a stand-in
-for the issue size, and market values are not converted to one currency.
+for the issue size.
 
 ## Cash flows
 
-The Cash Flows button calls `GET /api/cash_flows?basket=…&unwind=…`, with the
-unwind amount shown in the toolbar, and displays the two tables it returns. Each
+The Cash Flows button calls `POST /api/cash_flows` and displays the two tables
+it returns. Each
 table is a list of records whose keys are the headers, so adding a row or a
 table in `backend/cash_flows.py` needs no frontend change.
 
 | Table          | Row           | Mock computation                                             |
 |----------------|---------------|--------------------------------------------------------------|
-| `basket flows` | `performance` | previous `qty` × (current − previous `dirty_price`) / 100    |
-|                | `interests`   | − previous `mv` × `FINANCING_RATE` × `ACCRUAL_DAYS` / 360     |
+| `basket flows` | `performance` | previous `NOMINAL` × (current − previous `DIRTY PX`) / 100 / `RESET FX` |
+|                | `interests`   | − previous `MARKET VALUE (EUR)` × `FINANCING_RATE` × `ACCRUAL_DAYS` / 360 |
 |                | `unwind cost` | − unwind amount × `UNWIND_COST_RATE`                         |
 |                | `total`       | the sum of the three                                         |
-| `fx flows`     | one per `ccy` | previous `mv` − current `mv` in that currency                |
+| `fx flows`     | one per `CURRENCY` | previous − current `MARKET VALUE (EUR)` × `RESET FX`, in that currency |
 
-Positive amounts are received and negative ones paid. Basket flows are in EUR,
-converted with the mock rates in `EUR_PER`; fx flows stay in their own currency.
-Apart from the unwind amount, the figures come from the CSVs, not from the
-edits made on screen.
+Positive amounts are received and negative ones paid. Basket flows are in EUR;
+fx flows are in their own currency.
+The previous positions come from the CSV, the current ones from the screen.
 
 ## Where to change what
 
 | To change                               | Edit                                         |
 |-----------------------------------------|----------------------------------------------|
-| rows per grid, EUR/USD rate             | `MAIN_TABLE_ROWS`, `DEAL_TABLE_ROWS`, `EURUSD` in `utils.py` |
+| rows per grid                           | `MAIN_TABLE_ROWS`, `DEAL_TABLE_ROWS` in `utils.py` |
 | a check or its limit                    | `checks.py`: one decorated function per check |
 | a booking step                          | `booking.py`: one decorated function per step |
 | a cash flow formula, rate or FX rate    | `cash_flows.py`                              |
@@ -148,6 +177,7 @@ edits made on screen.
 | the market value or deal sheet formulas | `withMarketValues()`, `dealRows()` in `model.js` |
 | the totals strip                        | `renderTotals()` in `main.js`                |
 | a keyboard shortcut                     | `onKey()` and `onEditKey()` in `grid.js`     |
+| what a column filter understands        | `matcher()` in `filter.js`                   |
 | column width limits                     | `STYLES` in `widths.js`                      |
 
 ## Features
@@ -155,26 +185,42 @@ edits made on screen.
 - **Grid** — Excel-like range selection, keyboard navigation (arrows, Tab, Home,
   End, PageUp/PageDown), in-cell editing (Enter, F2, double-click or just type),
   TSV copy/paste, Delete to clear a range.
-- **Live model** — editing `qty` recomputes `mv_pre = qty × dirty_price / 100`,
-  `mv = mv_pre × hc`, the totals and the deal sheet. Typing into an empty line
-  creates a position; clearing its `isin` removes it.
+- **Filters** — the funnel icon in the header corner of the main grid and of the
+  deal sheet shows a filter box under each column header. Clicking it again
+  hides the boxes and drops the filters. Text is a case-insensitive "contains"; `>1M`,
+  `<=5`, `=0` compare the displayed numbers; `=EUR` is an exact match. Filters
+  on several columns combine. Hidden lines are skipped by keyboard moves, copy,
+  paste, bulk edit, Delete and the selection total. Filters only change what is
+  displayed: the totals and everything sent to the backend keep the whole
+  basket. They survive the current/previous toggle and reset on a basket change.
+- **Live model** — editing `NOMINAL` recomputes the two market value columns,
+  the totals and the deal sheet. Typing into an empty line creates a `SUB IN`
+  position, which inherits its other columns when the `ISIN` is in the previous
+  set. Clearing the `ISIN` of a line, alone or with the rest of the line, removes
+  the whole line; clearing only its `NOMINAL` sets it to 0 and keeps the line.
 - **Bulk edit** — select a range, type a value and press Ctrl/Cmd+Enter to apply
   it to every editable cell of the selection.
 - **Amount input** — amounts accept `125k`, `140M`, `1.5m` and `1,500,000`.
 - **Selection total** — selecting summable cells adds a "Selection" tile with
   their sum and count.
-- **Deal sheet** — current − previous `qty` per `isin`, valued at the current
-  prices. It lives in a drawer opened by the tab at the bottom.
-- **Inventory** — the `+` of a row shows the `inventory.csv` lines of its `isin`.
-- **Columns** — every column stays visible without horizontal scrolling. Numeric
-  columns never shrink below their content, text columns ellipsise. Dragging a
-  column edge pins its width; double-clicking the edge releases it.
+- **Deal sheet** — current − previous `NOMINAL` per `ISIN`, valued at the current
+  prices, with `SOURCE` set to `SUB IN` for an increase and `SUB OUT` for a
+  decrease. It lives in a drawer opened by the tab at the bottom.
+- **Row rail** — a `SUB IN` line carries a green rail on its left, a `SUB OUT`
+  line a red one.
+- **Inventory** — the `+` of a row shows the `inventory.csv` lines of its `ISIN`.
+- **Columns** — long headers wrap. On a wide window every column is visible;
+  below that the grid scrolls sideways. Numeric columns never shrink below
+  their content, text columns ellipsise. Dragging a column edge pins its width;
+  double-clicking the edge releases it.
 - **Dates** — changing TD moves COB to the previous business day and VD to the
   next one. Weekends are skipped; there is no holiday calendar.
-- **Notionals** — the old notional is the previous basket's total `mv`, the new
+- **Notionals** — the old notional is the previous basket's total
+  `MARKET VALUE (EUR)`, the new
   one defaults to it and the unwind amount is the difference. Editing either
   recomputes the other. They are indicators and do not rescale the positions.
 - **Email** — the button asks for confirmation, then shows "sending" with a
-  spinner and the outcome. `POST /api/email?basket=…` calls `send_email()` in
+  spinner and the outcome. `POST /api/email` calls `send_email()` in
   `utils.py`, a mock that sleeps for `MOCK_EMAIL_DURATION` and sends nothing.
-- **Also** — current/previous toggle, basket details popup, dark mode.
+- **Also** — current/previous toggle, basket details popup, dark mode, a spinner
+  over the main table while a basket loads.

@@ -1,14 +1,18 @@
-async function request(path, params = {}, method = "GET") {
-  const given = Object.entries(params).filter(([, value]) => value !== undefined);
-  const response = await fetch(`./api/${path}?${new URLSearchParams(given)}`, { method });
-  const body = await response.json();
-  if (!response.ok) throw new Error(body.detail);
-  return body;
+// Without a body the request is a GET; with one it is a POST of that body as JSON.
+async function request(path, body) {
+  const post = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  const response = await fetch(`./api/${path}`, body ? post : {});
+  const answer = await response.json();
+  if (!response.ok) throw new Error(answer.detail);
+  return answer;
 }
 
-export const getBasket = (basket) => request("basket", { basket });
-// kind is "checks" or "booking": the functions behind the button, then one of them run
+export const getBasket = (basket) => request(basket ? `basket?basket=${encodeURIComponent(basket)}` : "basket");
+
+// kind is "checks" or "booking": the names of the functions behind the button
 export const getTasks = (kind) => request(kind);
-export const runTask = (kind, name, basket) => request(`${kind}/${name}`, { basket }, "POST");
-export const sendEmail = (basket) => request("email", { basket }, "POST");
-export const getCashFlows = (basket, unwind) => request("cash_flows", { basket, unwind });
+
+// edited is the basket as it stands on screen: { basket, positions, unwind }
+export const runTask = (kind, name, edited) => request(`${kind}/${name}`, edited);
+export const sendEmail = (edited) => request("email", edited);
+export const getCashFlows = (edited) => request("cash_flows", edited);

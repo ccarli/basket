@@ -3,13 +3,15 @@ import { isNumeric } from "./format.js";
 // Must mirror the fonts and paddings of table.grid in style.css.
 const UI = "Inter, ui-sans-serif, system-ui, sans-serif";
 const MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace';
-const HEADER = { font: `600 10.5px ${UI}`, letterSpacing: 0.84, padding: 26, maxFloor: 145 };
+const HEADER = { font: `600 10.5px ${UI}`, letterSpacing: 0.84, padding: 26 };
 const CELL_PADDING = 22;
+const READABLE_TEXT = 130; // a text column is not squeezed below this, unless its content is shorter
 const STYLES = {
   text: { font: `400 12.5px ${UI}`, min: 62, max: 300 },
   mono: { font: `400 12px ${MONO}`, min: 92, max: 170 },
   amount: { font: `400 12.5px ${MONO}`, min: 86, max: 190 },
-  price: { font: `400 12.5px ${MONO}`, min: 78, max: 150 },
+  price: { font: `400 12.5px ${MONO}`, min: 70, max: 150 },
+  rate: { font: `400 12.5px ${MONO}`, min: 70, max: 120 },
   pct: { font: `400 12.5px ${MONO}`, min: 54, max: 120 },
 };
 
@@ -24,13 +26,14 @@ function widest(texts, font, letterSpacing = 0) {
 }
 
 // Numeric columns never go below their content; text columns may, and ellipsise.
+// When the minimums do not fit the space, the grid scrolls sideways.
 function request(column, texts) {
   const style = STYLES[column.format] ?? STYLES.text;
-  const header = widest([column.name], HEADER.font, HEADER.letterSpacing) + HEADER.padding;
+  const header = widest(column.name.split(" "), HEADER.font, HEADER.letterSpacing) + HEADER.padding; // headers wrap
   const content = widest(texts, style.font) + CELL_PADDING;
   const min = isNumeric(column)
     ? Math.min(style.max, Math.max(style.min, header, content))
-    : Math.min(HEADER.maxFloor, Math.max(style.min, header));
+    : Math.max(style.min, header, Math.min(content, READABLE_TEXT));
   return { min, want: Math.min(style.max, Math.max(min, content)) };
 }
 

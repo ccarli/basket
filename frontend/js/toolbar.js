@@ -25,18 +25,19 @@ export function showBasket({ baskets, basket, statics: records }) {
   $("#statics-body").innerHTML = recordsTable(records);
 }
 
-export function initToolbar({ onBasket, onNotional }) {
+// editedBasket() returns the basket as it stands on screen, for the backend to work on.
+export function initToolbar({ onBasket, onNotional, editedBasket }) {
   const saved = localStorage.getItem("theme");
   setTheme(saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches);
   $("#theme").addEventListener("click", () => setTheme(!document.body.classList.contains("dark")));
   const report = (error) => alert(error.message);
-  $("#cash-flows").addEventListener("click", () => showCashFlows(select.value, notional.unwind).catch(report));
-  $("#checks").addEventListener("click", () => runTasks("checks", select.value).catch(report));
-  $("#book").addEventListener("click", () => runTasks("booking", select.value, { stopAtFailure: true }).catch(report));
+  $("#cash-flows").addEventListener("click", () => showCashFlows(editedBasket()).catch(report));
+  $("#checks").addEventListener("click", () => runTasks("checks", editedBasket()).catch(report));
+  $("#book").addEventListener("click", () => runTasks("booking", editedBasket(), { stopAtFailure: true }).catch(report));
   select.addEventListener("change", () => onBasket(select.value));
 
   $("#statics-open").addEventListener("click", () => $("#statics").showModal());
-  $("#email").addEventListener("click", () => confirmEmail(select.value));
+  $("#email").addEventListener("click", () => confirmEmail(editedBasket()));
   for (const dialog of document.querySelectorAll("dialog")) {
     dialog.addEventListener("click", (e) => {
       const outside = e.target === dialog;

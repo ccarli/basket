@@ -4,6 +4,7 @@ from zlib import crc32
 import pandas as pd
 
 import utils
+from utils import MARKET_VALUE, NOMINAL
 
 MOCK_DURATION = 0.8  # seconds each step pretends to work for
 APEX_MAX_LINES = 40
@@ -32,12 +33,12 @@ def log_basket(basket: str, positions: pd.DataFrame) -> str:
 
 @step("Book the basket in STAR")
 def book_star(basket: str, positions: pd.DataFrame) -> str:
-    return f"STAR trade {reference('ST', basket)}, qty {positions['qty'].sum():,}"
+    return f"STAR trade {reference('ST', basket)}, {NOMINAL} {positions[NOMINAL].sum():,}"
 
 
 @step("Book the basket in FOCUS")
 def book_focus(basket: str, positions: pd.DataFrame) -> str:
-    return f"FOCUS deal {reference('FC', basket)}, mv {positions['mv'].sum():,}"
+    return f"FOCUS deal {reference('FC', basket)}, {MARKET_VALUE} {positions[MARKET_VALUE].sum():,}"
 
 
 @step(f"Book the basket in APEX, which takes at most {APEX_MAX_LINES} lines")
@@ -47,10 +48,10 @@ def book_apex(basket: str, positions: pd.DataFrame) -> str:
     return f"APEX ticket {reference('AX', basket)}"
 
 
-def run(name: str, basket: str) -> dict:
+def run(name: str, basket: str, positions: pd.DataFrame) -> dict:
     function = STEPS[name]
     time.sleep(MOCK_DURATION)
     try:
-        return {"passed": True, "detail": function(basket, utils.positions(basket, "current"))}
+        return {"passed": True, "detail": function(basket, positions)}
     except BookingError as error:
         return {"passed": False, "detail": str(error)}

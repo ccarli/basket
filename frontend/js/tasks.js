@@ -15,8 +15,9 @@ const item = ({ name, description }) => `
   </li>`;
 
 // Opens the #<kind>-dialog popup and calls the backend functions of that kind
-// ("checks" or "booking") one after the other, so each shows as running in turn.
-export async function runTasks(kind, basket, { stopAtFailure = false } = {}) {
+// ("checks" or "booking") on the edited basket, one after the other, so each
+// shows as running in turn.
+export async function runTasks(kind, edited, { stopAtFailure = false } = {}) {
   const dialog = document.querySelector(`#${kind}-dialog`);
   const list = dialog.querySelector(".tasks");
   const summary = dialog.querySelector(".s");
@@ -34,7 +35,7 @@ export async function runTasks(kind, basket, { stopAtFailure = false } = {}) {
   for (const [index, { name }] of tasks.entries()) {
     const shown = list.children[index];
     shown.className = "running";
-    const { passed, detail } = await runTask(kind, name, basket);
+    const { passed, detail } = await runTask(kind, name, edited);
     if (superseded()) return;
     shown.className = passed ? "passed" : "failed";
     shown.querySelector(".detail").textContent = detail;

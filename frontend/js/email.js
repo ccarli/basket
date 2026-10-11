@@ -4,6 +4,7 @@ const $ = (selector) => document.querySelector(selector);
 const dialog = $("#email-dialog");
 const task = $("#email-task");
 let latestAttempt = 0;
+let pending = null; // the edited basket awaiting confirmation
 
 // dialog.dataset.state is asking, sending or done: style.css shows the matching parts.
 function show(state, status, title, detail = "") {
@@ -16,16 +17,17 @@ function show(state, status, title, detail = "") {
 async function send() {
   const attempt = ++latestAttempt;
   show("sending", "running", "sending");
-  const outcome = await sendEmail($("#email-basket").textContent).then(
+  const outcome = await sendEmail(pending).then(
     ({ detail }) => ["passed", "sent", detail],
     (error) => ["failed", "not sent", error.message]
   );
   if (attempt === latestAttempt) show("done", ...outcome);
 }
 
-export function confirmEmail(basket) {
+export function confirmEmail(edited) {
   latestAttempt++;
-  $("#email-basket").textContent = basket;
+  pending = edited;
+  $("#email-basket").textContent = edited.basket;
   dialog.dataset.state = "asking";
   dialog.showModal();
 }

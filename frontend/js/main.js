@@ -2,7 +2,7 @@ import { getBasket } from "./api.js";
 import { initCalendar } from "./calendar.js";
 import { amount, tone } from "./format.js";
 import { Grid } from "./grid.js";
-import { applyEdits, dealRows, positions, selectionSum, sum, toEur, totalQty } from "./model.js";
+import { MARKET_VALUE, NOMINAL, applyEdits, dealRows, positions, selectionSum, totalMarketValue, totalNominal } from "./model.js";
 import { initToolbar, showBasket, showNotional } from "./toolbar.js";
 import { columnWidths } from "./widths.js";
 
@@ -26,11 +26,10 @@ function render() {
   const current = applyEdits(data.current, edits, data.previous, data.columns);
   const deal = dealRows(current, data.previous);
   const rows = mode === "current" ? current : data.previous;
-  const eur = (row) => toEur(row, data.eurusd);
   state.view = {
-    rows, deal, eur,
-    currentMv: Math.round(sum(positions(current), eur)),
-    previousMv: Math.round(sum(data.previous, eur)),
+    current, rows, deal,
+    currentMv: totalMarketValue(positions(current)),
+    previousMv: totalMarketValue(data.previous),
   };
 
   mainGrid.update({ columns: data.columns, rows, minRows: data.rows.main, inventory: data.inventory, editable: mode === "current" });
@@ -51,32 +50,31 @@ function layout() {
 const tile = (name, value, { hint = "", className = "" } = {}) =>
   `<div class="cell"><span class="k">${name}<span class="ccy">${hint}</span></span><span class="v ${className}">${value}</span></div>`;
 
-function selectionTile(grid, rows) {
-  const picked = selectionSum(grid.range, rows, state.data.columns);
+function selectionTile(grid) {
+  const picked = selectionSum(grid.selected);
   return picked
     ? tile("Selection", amount(Math.round(picked.total)), { hint: `${picked.cells} cell${picked.cells > 1 ? "s" : ""}`, className: "sel" })
     : "";
 }
 
 function renderTotals() {
-  const { rows, deal, eur, currentMv, previousMv } = state.view;
+  const { rows, deal, currentMv, previousMv } = state.view;
   const shown = positions(rows);
-  const dealQty = totalQty(deal);
-  const dealMv = Math.round(sum(deal, eur));
-  const eurEq = { hint: "EUR eq." };
+  const dealNominal = totalNominal(deal);
+  const dealMv = totalMarketValue(deal);
 
   $("#main-totals").innerHTML =
     tile("Lines", shown.length) +
-    selectionTile(mainGrid, rows) +
-    tile("Total qty", amount(totalQty(shown))) +
-    tile("Total mv — current", amount(currentMv), eurEq) +
-    tile("Total mv — previous", amount(previousMv), eurEq);
+    selectionTile(mainGrid) +
+    tile(NOMINAL, amount(totalNominal(shown))) +
+    tile(`${MARKET_VALUE} — current`, amount(currentMv)) +
+    tile(`${MARKET_VALUE} — previous`, amount(previousMv));
 
   $("#deal-totals").innerHTML =
     tile("Lines", deal.length) +
-    selectionTile(dealGrid, deal) +
-    tile("Δ Total qty", amount(dealQty, true), { className: tone(dealQty) }) +
-    tile("Δ Total mv", amount(dealMv, true), { ...eurEq, className: tone(dealMv) });
+    selectionTile(dealGrid) +
+    tile(`Δ ${NOMINAL}`, amount(dealNominal, true), { className: tone(dealNominal) }) +
+    tile(`Δ ${MARKET_VALUE}`, amount(dealMv, true), { className: tone(dealMv) });
 }
 
 // Editing the new notional or the unwind amount recomputes the other one.
@@ -84,6 +82,16 @@ function renderNotional() {
   const old = state.view.previousMv;
   const next = state.newNotional ?? old;
   showNotional({ old, new: next, unwind: old - next });
+}
+
+// What the backend functions run on: the current positions with the edits applied.
+function editedBasket() {
+  const { current, previousMv } = state.view;
+  return {
+    basket: state.data.basket,
+    positions: positions(current),
+    unwind: previousMv - (state.newNotional ?? previousMv),
+  };
 }
 
 function onNotional(field, value) {
@@ -110,12 +118,15 @@ function setMode(mode) {
 }
 
 async function loadBasket(basket) {
+  $(".main").classList.add("loading");
   try {
     state.data = await getBasket(basket);
   } catch (error) {
     alert(error.message);
     if (state.data) showBasket(state.data);
     return;
+  } finally {
+    $(".main").classList.remove("loading");
   }
   state.edits = {};
   state.newNotional = null;
@@ -131,7 +142,7 @@ function toggleDealSheet() {
   if (!open) dealGrid.clearSelection();
 }
 
-initToolbar({ onBasket: loadBasket, onNotional });
+initToolbar({ onBasket: loadBasket, onNotional, editedBasket });
 initCalendar();
 document.querySelectorAll("[data-mode]").forEach((button) => button.addEventListener("click", () => setMode(button.dataset.mode)));
 $("#drawer-handle").addEventListener("click", toggleDealSheet);

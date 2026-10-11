@@ -191,6 +191,19 @@
     min-height:0;
     overflow:auto;
     background:var(--bg);
+    position:relative;
+  }
+  /* While a basket loads: a veil over the main table and a spinner in its middle. */
+  .main.loading::before{
+    content:""; position:absolute; inset:0; z-index:10;
+    background:var(--bg); opacity:.65;
+  }
+  .main.loading::after{
+    content:""; position:absolute; z-index:11;
+    top:calc(50% - 18px); left:calc(50% - 18px);
+    width:36px; height:36px; box-sizing:border-box; border-radius:50%;
+    border:3px solid var(--accent-soft); border-top-color:var(--accent);
+    animation:spin .7s linear infinite;
   }
   .pane{
     display:flex; flex-direction:column; min-width:0;
@@ -230,10 +243,30 @@
     font-weight:600; color:var(--ink-3);
     font-size:10.5px; letter-spacing:.08em;
     padding:9px 10px;
-    white-space:nowrap;
-    overflow:hidden; text-overflow:ellipsis;
+    vertical-align:bottom;
   }
   table.grid thead th.num{ text-align:right }
+  /* Long names wrap on their spaces, so a header never widens its column. */
+  table.grid thead .name{ overflow:hidden; text-overflow:ellipsis }
+  /* The funnel in the header corner shows a filter box under each header,
+     tinted while it holds a filter. */
+  table.grid thead th:has(.filter-btn){ padding:0; vertical-align:top; overflow:visible }
+  .filter-btn{
+    width:22px; height:22px; margin:5px auto 0; border-radius:5px;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-4);
+  }
+  .filter-btn:hover{ background:var(--surface-2); color:var(--ink) }
+  table.grid.filtering .filter-btn{ background:var(--accent-soft); color:var(--accent) }
+  table.grid:not(.filtering) thead input{ display:none }
+  table.grid thead input{
+    display:block; width:100%; height:20px; margin-top:5px; padding:0 5px;
+    border:1px solid var(--line); border-radius:4px; outline:none;
+    background:var(--bg); color:var(--ink);
+    font:400 11px var(--f-ui); letter-spacing:0;
+  }
+  table.grid thead input:focus{ border-color:var(--accent) }
+  table.grid thead input:not(:placeholder-shown){ border-color:var(--accent); background:var(--accent-soft) }
 
   table.grid tbody td{
     border-bottom:1px solid var(--line);
@@ -253,11 +286,9 @@
 
   /* State-colored rows keep their neutral bg (rail carries the state color) */
   table.grid tbody tr.row.st-add td,
-  table.grid tbody tr.row.st-rem td,
-  table.grid tbody tr.row.st-edit td{ background:var(--bg) }
+  table.grid tbody tr.row.st-rem td{ background:var(--bg) }
   table.grid tbody tr.row.st-add:nth-child(odd) td,
-  table.grid tbody tr.row.st-rem:nth-child(odd) td,
-  table.grid tbody tr.row.st-edit:nth-child(odd) td{ background:var(--stripe) }
+  table.grid tbody tr.row.st-rem:nth-child(odd) td{ background:var(--stripe) }
 
   table.grid tbody td .cell{
     padding:9px 10px; min-height:36px; display:flex; align-items:center;
@@ -297,7 +328,6 @@
   td.state{ padding:0; width:3px }
   tr.st-add td.state .state-rail{ background:var(--add) }
   tr.st-rem td.state .state-rail{ background:var(--rem) }
-  tr.st-edit td.state .state-rail{ background:var(--edit) }
 
   /* expander */
   td.expander{ width:32px; padding:0 }
